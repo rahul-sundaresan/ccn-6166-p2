@@ -28,7 +28,7 @@ def gbn_send(dst_port, packet_count, seq_bits, window_size, timeout, mss):
              # send our "TCP" segment via UDP
             client_socket.sendto(pickle.dumps(packet_in_send_queue), (recv_host, recv_port))
             print("Sending sequence no: " + str(next_seq_num) + "; Timer started")
-            next_seq_num = next_seq_num + mss
+            next_seq_num = (next_seq_num + mss)%(2**seq_bits - 1)
             tcp_window.append(packet_in_send_queue)
             sent_packet_count += 1
             recv_packet = pickle.loads(client_socket.recv(4096))
