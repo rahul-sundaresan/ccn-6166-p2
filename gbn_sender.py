@@ -19,27 +19,25 @@ def gbn_send(dst_port, packet_count, seq_bits, window_size, timeout, mss):
 
     while sent_packet_count <= packet_count:
         payload = os.getrandom(mss)
-        if next_seq_num < window_base + window_size:
-            #  create packet tuple (sequence_no, checksum, payload, mss, bits for sequence number)
-            checksum = hashlib.sha256()
-            checksum.update(next_seq_num)
-            checksum.update(payload)
-            checksum.update(mss)
-            checksum.update(seq_bits)
-            packet_in_send_queue = (next_seq_num, checksum.digest(), payload, mss, seq_bits)
-            # send our "TCP" segment via UDP
-            client_socket.sendto(pickle.dumps(packet_in_send_queue), (recv_host, recv_port))
-            print("Sending sequence no: " + str(next_seq_num) + "; Timer started")
-            next_seq_num = (next_seq_num + mss) % (2**seq_bits - 1)
-            tcp_window.append(packet_in_send_queue)
-            sent_packet_count += 1
-            recv_packet = pickle.loads(client_socket.recv(4096))
-            print("Received ACK: ", recv_packet[0])
-            while recv_packet[0] > window_base and window_size:
-                latest_ack_time = time.time()
-                del tcp_window[0]
-                window_base = window_base + 1
-            if time.time() - latest_ack_time > float(timeout/1000):
-                for packet in tcp_window:
-                    print("Timer expired. Retransmitting packet with with seq No: ", str(packet[0]))
-                    client_socket.sendto(pickle.dumps(packet), (recv_host, recv_port))
+        #  create packet tuple (sequence_no, checksum, payload, mss, bits for sequence number)
+        checksum = hashlib.sha256()
+        checksum.update(pickle.dumps(next_seq_num))
+        checksum.update(payload)
+        checksum.update(pickle.dumps(mss))
+        checksum.update(pickle.dumps(seq_bits))
+        packet_in_send_queue = (next_seq_num, checksum.digest(), payload, mss, seq_bits)
+        # send our "TCP" segment via UDP
+        client_socket.sendto(pickle.dumps(packet_in_send_queue), (recv_host, recv_port))
+        print("Sending sequence no: " + str(next_seq_num) + "; Timer started")
+        next_seq_num = (next_seq_num + mss) % (2**seq_bits - 1)
+        tcp_window.append(packet_in_send_queue)
+        sent_packet_count += 1
+        recv_packet = pickle.loads(client_socket.recv(4096))
+        print("Received ACK: ", recv_packet[0])
+        latest_ack_time = time.time()
+        del tcp_window[0]
+        window_base = window_base + 1
+        if time.time() - latest_ack_time > float(timeout/1000):
+            for packet in tcp_window:
+                print("Timer expired. Retransmitting packet with with seq No: ", str(packet[0]))
+                client_socket.sendto(pickle.dumps(packet), (recv_host, recv_port))
