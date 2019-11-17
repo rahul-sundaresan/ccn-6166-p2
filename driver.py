@@ -1,5 +1,6 @@
 import sys
 import gbn_sender
+import sr_sender
 
 
 def read_file_and_return_params(file_name):
@@ -22,5 +23,6 @@ if __name__ == '__main__':
     if tcp_type == "GBN":
         gbn_sender.gbn_send(dst_port, packet_count, seq_bits, window_size, timeout, mss)
     else:
-        pass
+        sr_sender.sr_send(dst_port, packet_count, seq_bits, window_size, timeout, mss)
+
 
